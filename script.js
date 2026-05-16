@@ -1,21 +1,36 @@
 /* ── DOM ── */
 const video       = document.getElementById('bg-video');
+const video2      = document.getElementById('bg-video-2');
 const progressBar = document.getElementById('progress-bar');
 const scrollHint  = document.getElementById('scroll-hint');
 const sectionNum  = document.getElementById('section-num');
 const scenes      = document.querySelectorAll('.scene');
 const container   = document.getElementById('scroll-container');
 
-/* ── STATE-DRIVEN SCENE ACTIVATION ──
-   A scene activa deriva SEMPRE do scroll progress.
-   Não há flag "isTransitioning" a bloquear nada.
-   Cada update recalcula que scene está activa e ajusta classes.
-*/
+/* ── CONFIG ── */
+const FPS        = 30;
+const FRAME_DUR  = 1 / FPS;
+const SMOOTHING  = 0.12;
+const SPLIT      = 0.5;    // ponto (0–1) onde house termina e vibe começa
+const FADE_BAND  = 0.025;  // meia-largura da zona de crossfade
+
+/* ── ESTADO VÍDEO 1 ── */
+let targetTime  = 0;
+let currentTime = 0;
+let isSeeking   = false;
+
+/* ── ESTADO VÍDEO 2 ── */
+let targetTime2  = 0;
+let currentTime2 = 0;
+let isSeeking2   = false;
+
+/* ── PROGRESSO GLOBAL ── */
 function getScrollProgress() {
   const maxScroll = container.scrollHeight - window.innerHeight;
   return maxScroll > 0 ? Math.min(Math.max(window.scrollY / maxScroll, 0), 1) : 0;
 }
 
+/* ── CENAS (recebem progress local do house, 0–1) ── */
 function getActiveSceneIndex(progress) {
   let idx = 0;
   scenes.forEach((scene, i) => {
@@ -31,12 +46,10 @@ function getActiveSceneIndex(progress) {
 
 let lastActiveIdx = -1;
 
-function updateScenes(progress) {
-  const activeIdx = getActiveSceneIndex(progress);
+function updateScenes(houseProgress) {
+  const activeIdx = getActiveSceneIndex(houseProgress);
 
   if (activeIdx !== lastActiveIdx) {
-    /* Aplica .active apenas à scene correcta — todas as outras perdem-na.
-       O CSS faz o resto via transition. */
     scenes.forEach((scene, i) => {
       scene.classList.toggle('active', i === activeIdx);
     });
@@ -48,54 +61,85 @@ function updateScenes(progress) {
     String(scenes.length).padStart(2, '0');
 }
 
-/* ── SCROLL SCRUBBING DO VÍDEO (optimizado) ── */
-const FPS         = 30;             // ajusta se o vídeo for 24 ou 60
-const FRAME_DUR   = 1 / FPS;
-const SMOOTHING   = 0.12;           // 0.05 = mais suave/lento, 0.25 = mais directo
-let   targetTime  = 0;
-let   currentTime = 0;
-let   isSeeking   = false;          // bloqueia novo seek enquanto um está pendente
+/* ── CROSSFADE ── */
+function updateCrossfade(overall) {
+  const fadeStart = SPLIT - FADE_BAND;
+  const fadeEnd   = SPLIT + FADE_BAND;
+  let opacity2    = 0;
+  let sceneAlpha  = 1;
 
+  if (overall >= fadeEnd) {
+    opacity2   = 1;
+    sceneAlpha = 0;
+  } else if (overall > fadeStart) {
+    const t  = (overall - fadeStart) / (FADE_BAND * 2);
+    opacity2  = t;
+    sceneAlpha = 1 - t;
+  }
+
+  video2.style.opacity = opacity2;
+
+  /* Fade out das scenes e do counter durante o crossfade */
+  scenes.forEach(s => { s.style.opacity = sceneAlpha; });
+  sectionNum.style.opacity = sceneAlpha;
+}
+
+/* ── UPDATE PRINCIPAL ── */
+function updateFromScroll() {
+  const overall = getScrollProgress();
+
+  const houseProgress = Math.min(Math.max(overall / SPLIT, 0), 1);
+  const vibeProgress  = Math.min(Math.max((overall - SPLIT) / (1 - SPLIT), 0), 1);
+
+  targetTime  = houseProgress * (video.duration  || 0);
+  targetTime2 = vibeProgress  * (video2.duration || 0);
+
+  progressBar.style.width  = (overall * 100) + '%';
+  scrollHint.style.opacity = overall > 0.02 ? '0' : '1';
+
+  updateScenes(houseProgress);
+  updateCrossfade(overall);
+}
+
+/* ── INICIALIZAÇÃO DOS VÍDEOS ── */
 video.addEventListener('loadedmetadata', () => {
-  /* Optimizações no elemento de vídeo */
   video.pause();
   video.playbackRate = 0;
   updateFromScroll();
 });
-
-/* Marca quando o seek terminou — só então enviamos o próximo */
 video.addEventListener('seeked', () => { isSeeking = false; });
 
-function updateFromScroll() {
-  const progress = getScrollProgress();
+video2.addEventListener('loadedmetadata', () => {
+  video2.pause();
+  video2.playbackRate = 0;
+  updateFromScroll();
+});
+video2.addEventListener('seeked', () => { isSeeking2 = false; });
 
-  targetTime = progress * (video.duration || 0);
-  progressBar.style.width  = (progress * 100) + '%';
-  scrollHint.style.opacity = progress > 0.04 ? '0' : '1';
-
-  updateScenes(progress);
-}
-
-/* Loop separado do scroll — actualiza o vídeo no ritmo do display refresh,
-   mas só envia seek quando o anterior terminou e a diferença justifica. */
+/* ── RAF LOOP — scrub suave dos dois vídeos ── */
 function videoLoop() {
   if (video.duration) {
-    /* Interpolação suave em direcção ao target */
-    const diff = targetTime - currentTime;
-    currentTime += diff * SMOOTHING;
-
-    /* Snap ao frame mais próximo */
+    const diff    = targetTime - currentTime;
+    currentTime  += diff * SMOOTHING;
     const snapped = Math.round(currentTime / FRAME_DUR) * FRAME_DUR;
     const delta   = Math.abs(snapped - video.currentTime);
-
-    /* Só envia seek se:
-       - não há seek em curso
-       - a diferença é >= 1 frame (evita work desnecessário) */
     if (!isSeeking && delta >= FRAME_DUR) {
       isSeeking = true;
       video.currentTime = snapped;
     }
   }
+
+  if (video2.duration) {
+    const diff2   = targetTime2 - currentTime2;
+    currentTime2 += diff2 * SMOOTHING;
+    const snapped2 = Math.round(currentTime2 / FRAME_DUR) * FRAME_DUR;
+    const delta2   = Math.abs(snapped2 - video2.currentTime);
+    if (!isSeeking2 && delta2 >= FRAME_DUR) {
+      isSeeking2 = true;
+      video2.currentTime = snapped2;
+    }
+  }
+
   requestAnimationFrame(videoLoop);
 }
 
