@@ -242,7 +242,7 @@ p {
 .divider-center { margin: 1.2rem auto; }
 
 /* ── PROGRESS BAR ── */
-#progress-bar {
+/*#progress-bar {
   position: absolute;
   bottom: 0; left: 0;
   height: 1px;
@@ -250,7 +250,7 @@ p {
   background: rgba(255,255,255,0.45);
   z-index: 10;
   transition: width 0.08s linear;
-}
+}*/
 
 /* ── SCROLL HINT ── */
 #scroll-hint {
@@ -294,3 +294,58 @@ p {
   color: rgba(255,255,255,0.28);
   transition: opacity 0.4s;
 }
+
+/* ── SEGUNDA PARTE — vibes.mp4 ── */
+
+/* Direcções de entrada */
+.scene-6  .glass            { transform: translateY(40px) scale(0.96); }
+.scene-7  .glass            { transform: translateX(50px) scale(0.96); }
+.scene-8  .glass            { transform: translateX(-50px) scale(0.96); }
+.scene-9  .card:nth-child(1){ transform: translateX(-40px) scale(0.96); }
+.scene-9  .card:nth-child(2){ transform: translateX(40px)  scale(0.96); }
+.scene-10 .card-line        { transform: scaleX(0.6); opacity: 0; }
+.scene-10 .card             { transform: translateY(30px) scale(0.96); }
+.scene-11 .glass            { transform: translateY(-40px) scale(0.96); }
+
+/* Activos */
+.scene-10.active .card-line { transform: scaleX(1); }
+.scene-10.active .card      { transition-delay: 0.1s; }
+
+/* Stagger scene-9 */
+.scene-9.active .card:nth-child(2) { transition-delay: 0.12s; }
+.scene-9 .card:nth-child(2)        { transition-delay: 0s; }
+
+/* Layouts */
+.scene-6  { align-items: flex-end;   justify-content: center; }
+.scene-6  .card { padding: 2.5rem 4rem; text-align: center; max-width: 680px; }
+
+.scene-7  { align-items: center; justify-content: flex-end; }
+.scene-7  .card { padding: 2rem 2.5rem; max-width: 480px; }
+
+.scene-8  { align-items: center; justify-content: flex-start; }
+.scene-8  .card { padding: 2rem 2.5rem; max-width: 480px; }
+
+.scene-9  { align-items: flex-start; justify-content: space-between; gap: 2rem; padding-top: 10vh; }
+.scene-9  .card { padding: 1.75rem 2rem; flex: 1; max-width: 420px; }
+
+.scene-10 { align-items: center; justify-content: center; flex-direction: column; gap: 2rem; }
+.scene-10 .card-line {
+  padding: 1rem 3rem;
+  text-align: center;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(255,255,255,0.25);
+  border-bottom: 1px solid rgba(255,255,255,0.25);
+  border-left: none;
+  border-right: none;
+  width: 100%;
+  max-width: 700px;
+  transition:
+    opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.scene-10 .card { padding: 2rem 2.5rem; max-width: 600px; text-align: center; }
+
+.scene-11 { align-items: flex-start; justify-content: center; padding-top: 8vh; }
+.scene-11 .card { padding: 2.5rem 3.5rem; max-width: 750px; text-align: center; }

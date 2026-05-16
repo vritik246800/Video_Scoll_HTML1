@@ -4,15 +4,18 @@ const video2      = document.getElementById('bg-video-2');
 const progressBar = document.getElementById('progress-bar');
 const scrollHint  = document.getElementById('scroll-hint');
 const sectionNum  = document.getElementById('section-num');
-const scenes      = document.querySelectorAll('.scene');
+const houseScenes = document.querySelectorAll('.scene:not([data-section="vibe"])');
+const vibeScenes  = document.querySelectorAll('.scene[data-section="vibe"]');
 const container   = document.getElementById('scroll-container');
 
+const TOTAL = houseScenes.length + vibeScenes.length;
+
 /* ── CONFIG ── */
-const FPS        = 30;
-const FRAME_DUR  = 1 / FPS;
-const SMOOTHING  = 0.12;
-const SPLIT      = 0.5;    // ponto (0–1) onde house termina e vibe começa
-const FADE_BAND  = 0.025;  // meia-largura da zona de crossfade
+const FPS       = 30;
+const FRAME_DUR = 1 / FPS;
+const SMOOTHING = 0.12;
+const SPLIT     = 0.5;    // overall progress onde house termina e vibe começa
+const FADE_BAND = 0.025;  // meia-largura da zona de crossfade
 
 /* ── ESTADO VÍDEO 1 ── */
 let targetTime  = 0;
@@ -30,35 +33,40 @@ function getScrollProgress() {
   return maxScroll > 0 ? Math.min(Math.max(window.scrollY / maxScroll, 0), 1) : 0;
 }
 
-/* ── CENAS (recebem progress local do house, 0–1) ── */
-function getActiveSceneIndex(progress) {
+/* ── ÍNDICE ACTIVO numa lista de scenes ── */
+function getActiveIdx(list, progress) {
   let idx = 0;
-  scenes.forEach((scene, i) => {
+  list.forEach((scene, i) => {
     const from = parseFloat(scene.dataset.from);
     const to   = parseFloat(scene.dataset.to);
-    const last = i === scenes.length - 1;
-    if (progress >= from && (last || progress < to)) {
-      idx = i;
-    }
+    const last = i === list.length - 1;
+    if (progress >= from && (last || progress < to)) idx = i;
   });
   return idx;
 }
 
-let lastActiveIdx = -1;
+let lastHouseIdx = -1;
+let lastVibeIdx  = -1;
 
-function updateScenes(houseProgress) {
-  const activeIdx = getActiveSceneIndex(houseProgress);
-
-  if (activeIdx !== lastActiveIdx) {
-    scenes.forEach((scene, i) => {
-      scene.classList.toggle('active', i === activeIdx);
-    });
-    lastActiveIdx = activeIdx;
+function updateHouseScenes(houseProgress) {
+  const idx = getActiveIdx(houseScenes, houseProgress);
+  if (idx !== lastHouseIdx) {
+    houseScenes.forEach((s, i) => s.classList.toggle('active', i === idx));
+    lastHouseIdx = idx;
   }
-
   sectionNum.textContent =
-    String(activeIdx + 1).padStart(2, '0') + ' / ' +
-    String(scenes.length).padStart(2, '0');
+    String(idx + 1).padStart(2, '0') + ' / ' + String(TOTAL).padStart(2, '0');
+}
+
+function updateVibeScenes(vibeProgress) {
+  if (!vibeScenes.length) return;
+  const idx = getActiveIdx(vibeScenes, vibeProgress);
+  if (idx !== lastVibeIdx) {
+    vibeScenes.forEach((s, i) => s.classList.toggle('active', i === idx));
+    lastVibeIdx = idx;
+  }
+  sectionNum.textContent =
+    String(houseScenes.length + idx + 1).padStart(2, '0') + ' / ' + String(TOTAL).padStart(2, '0');
 }
 
 /* ── CROSSFADE ── */
@@ -66,22 +74,24 @@ function updateCrossfade(overall) {
   const fadeStart = SPLIT - FADE_BAND;
   const fadeEnd   = SPLIT + FADE_BAND;
   let opacity2    = 0;
-  let sceneAlpha  = 1;
+  let houseAlpha  = 1;
+  let vibeAlpha   = 0;
 
   if (overall >= fadeEnd) {
     opacity2   = 1;
-    sceneAlpha = 0;
+    houseAlpha = 0;
+    vibeAlpha  = 1;
   } else if (overall > fadeStart) {
     const t  = (overall - fadeStart) / (FADE_BAND * 2);
     opacity2  = t;
-    sceneAlpha = 1 - t;
+    houseAlpha = 1 - t;
+    vibeAlpha  = 0;
   }
 
   video2.style.opacity = opacity2;
-
-  /* Fade out das scenes e do counter durante o crossfade */
-  scenes.forEach(s => { s.style.opacity = sceneAlpha; });
-  sectionNum.style.opacity = sceneAlpha;
+  houseScenes.forEach(s => { s.style.opacity = houseAlpha; });
+  vibeScenes.forEach(s  => { s.style.opacity = vibeAlpha; });
+  sectionNum.style.opacity = Math.max(houseAlpha, vibeAlpha);
 }
 
 /* ── UPDATE PRINCIPAL ── */
@@ -97,7 +107,16 @@ function updateFromScroll() {
   progressBar.style.width  = (overall * 100) + '%';
   scrollHint.style.opacity = overall > 0.02 ? '0' : '1';
 
-  updateScenes(houseProgress);
+  updateHouseScenes(houseProgress);
+
+  /* Só activa vibe scenes quando o crossfade começa — evita flash de estado activo */
+  if (overall >= SPLIT - FADE_BAND) {
+    updateVibeScenes(vibeProgress);
+  } else if (lastVibeIdx !== -1) {
+    vibeScenes.forEach(s => s.classList.remove('active'));
+    lastVibeIdx = -1;
+  }
+
   updateCrossfade(overall);
 }
 
@@ -130,8 +149,8 @@ function videoLoop() {
   }
 
   if (video2.duration) {
-    const diff2   = targetTime2 - currentTime2;
-    currentTime2 += diff2 * SMOOTHING;
+    const diff2    = targetTime2 - currentTime2;
+    currentTime2  += diff2 * SMOOTHING;
     const snapped2 = Math.round(currentTime2 / FRAME_DUR) * FRAME_DUR;
     const delta2   = Math.abs(snapped2 - video2.currentTime);
     if (!isSeeking2 && delta2 >= FRAME_DUR) {
