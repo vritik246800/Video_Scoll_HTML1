@@ -1,0 +1,291 @@
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #000;
+  font-family: 'Cormorant Garamond', serif;
+  overflow-x: hidden;
+}
+
+#scroll-container {
+  height: 700vh;
+  position: relative;
+}
+
+#sticky-wrap {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+}
+
+video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0,0,0,0.15) 0%,
+    rgba(0,0,0,0.05) 40%,
+    rgba(0,0,0,0.35) 100%
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ── (SVG filter removido — animação não usa liquid) ── */
+
+/* ── GLASS BASE ── */
+.glass {
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 2px;
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  will-change: transform, opacity, backdrop-filter, clip-path;
+  /* timing curve assimétrica: arranque suave, fim firme — sensação de vidro a assentar */
+  transition:
+    transform 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity   0.6s  cubic-bezier(0.22, 1, 0.36, 1),
+    backdrop-filter 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    -webkit-backdrop-filter 0.85s cubic-bezier(0.22, 1, 0.36, 1),
+    clip-path 0.95s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── SCENES ── */
+.scene {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  pointer-events: none;
+  padding: 4vh 5vw;
+  opacity: 1;
+}
+
+/* ── ESTADO INACTIVO (REPOUSO) ──
+   Cards estão invisíveis, deslizados na sua direcção, com glass intensificado
+   (parecem condensação a dissipar). clip-path corta o card por uma linha
+   diagonal — o reveal "limpa" o card como uma lâmina de vidro. */
+.scene .glass,
+.scene .card-line {
+  opacity: 0;
+  backdrop-filter: blur(40px) saturate(1.8);
+  -webkit-backdrop-filter: blur(40px) saturate(1.8);
+  clip-path: polygon(0 0, 0 0, 0 100%, 0 100%);
+}
+
+/* ── DIRECÇÃO DE ENTRADA POR LAYOUT ── */
+
+/* Scene 0: bottom center — sobe */
+.scene-0 .glass { transform: translateY(40px) scale(0.96); }
+
+/* Scene 1: esquerda — entra da esquerda */
+.scene-1 .glass { transform: translateX(-50px) scale(0.96); }
+
+/* Scene 2: direita — entra da direita */
+.scene-2 .glass { transform: translateX(50px) scale(0.96); }
+
+/* Scene 3: dois cards — um da esquerda, outro da direita */
+.scene-3 .card:nth-child(1) { transform: translateX(-40px) scale(0.96); }
+.scene-3 .card:nth-child(2) { transform: translateX(40px)  scale(0.96); }
+
+/* Scene 4: card-line desliza horizontalmente, card desce */
+.scene-4 .card-line { transform: scaleX(0.6); opacity: 0; }
+.scene-4 .card      { transform: translateY(30px) scale(0.96); }
+
+/* Scene 5: topo — desce */
+.scene-5 .glass { transform: translateY(-40px) scale(0.96); }
+
+/* ── ESTADO ACTIVO (REPOUSO FINAL) ──
+   Cards entram em posição, glass volta ao normal, clip-path abre totalmente. */
+.scene.active .glass,
+.scene.active .card-line {
+  opacity: 1;
+  transform: translate(0, 0) scale(1);
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%);
+}
+.scene-4.active .card-line { transform: scaleX(1); }
+
+/* ── STAGGER ──
+   Segundo card de scene-3 entra com pequeno atraso para sensação de "cascata". */
+.scene-3.active .card:nth-child(2) {
+  transition-delay: 0.12s;
+}
+.scene-3 .card:nth-child(2) {
+  transition-delay: 0s;
+}
+.scene-4.active .card {
+  transition-delay: 0.1s;
+}
+
+/* Layout 0: bottom center */
+.scene-0 { align-items: flex-end; justify-content: center; }
+.scene-0 .card { padding: 2.5rem 4rem; text-align: center; max-width: 680px; }
+
+/* Layout 1: meio esquerda */
+.scene-1 { align-items: center; justify-content: flex-start; }
+.scene-1 .card { padding: 2rem 2.5rem; max-width: 480px; }
+
+/* Layout 2: topo direita */
+.scene-2 { align-items: flex-start; justify-content: flex-end; padding-top: 12vh; }
+.scene-2 .card { padding: 2rem 2.5rem; max-width: 520px; }
+
+/* Layout 3: dois blocos, bottom, space-between */
+.scene-3 { align-items: flex-end; justify-content: space-between; gap: 2rem; }
+.scene-3 .card { padding: 1.75rem 2rem; flex: 1; max-width: 420px; }
+
+/* Layout 4: coluna centrada */
+.scene-4 { align-items: center; justify-content: center; flex-direction: column; gap: 2rem; }
+.scene-4 .card-line {
+  padding: 1rem 3rem;
+  text-align: center;
+  background: rgba(255,255,255,0.04);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  border-top: 1px solid rgba(255,255,255,0.25);
+  border-bottom: 1px solid rgba(255,255,255,0.25);
+  border-left: none;
+  border-right: none;
+  width: 100%;
+  max-width: 700px;
+  transition:
+    opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+    transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.scene-4 .card { padding: 2rem 2.5rem; max-width: 600px; text-align: center; }
+
+/* Layout 5: topo centrado */
+.scene-5 { align-items: flex-start; justify-content: center; padding-top: 8vh; }
+.scene-5 .card { padding: 2.5rem 3.5rem; max-width: 750px; text-align: center; }
+
+/* Stagger: segundo card de scene-3 entra ligeiramente depois */
+.scene-3 .card:nth-child(2) {
+  transition-delay: 0.08s;
+}
+.scene-3:not(.active) .card:nth-child(2) {
+  transition-delay: 0s;
+}
+
+/* ── TIPOGRAFIA ── */
+.label {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 200;
+  font-size: 0.62rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(255,255,255,0.4);
+  margin-bottom: 1.2rem;
+}
+
+h1 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: clamp(2.4rem, 5vw, 4.2rem);
+  color: #fff;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: clamp(1.5rem, 3vw, 2.2rem);
+  color: rgba(255,255,255,0.92);
+  letter-spacing: 0.03em;
+  line-height: 1.25;
+  margin-bottom: 1rem;
+}
+
+p {
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 300;
+  font-size: clamp(1rem, 1.6vw, 1.2rem);
+  color: rgba(255,255,255,0.7);
+  line-height: 1.85;
+}
+
+.quote {
+  font-style: italic;
+  font-size: clamp(1.05rem, 1.7vw, 1.3rem);
+  color: rgba(255,255,255,0.82);
+  line-height: 1.7;
+  border-left: 1px solid rgba(255,255,255,0.28);
+  padding-left: 1.4rem;
+  margin-top: 1.2rem;
+}
+
+.divider {
+  width: 40px;
+  height: 1px;
+  background: rgba(255,255,255,0.28);
+  margin: 1.2rem 0;
+}
+.divider-center { margin: 1.2rem auto; }
+
+/* ── PROGRESS BAR ── */
+#progress-bar {
+  position: absolute;
+  bottom: 0; left: 0;
+  height: 1px;
+  width: 0%;
+  background: rgba(255,255,255,0.45);
+  z-index: 10;
+  transition: width 0.08s linear;
+}
+
+/* ── SCROLL HINT ── */
+#scroll-hint {
+  position: absolute;
+  bottom: 2.5rem; right: 2.5rem;
+  z-index: 10;
+  color: rgba(255,255,255,0.35);
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 200;
+  font-size: 0.58rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  transition: opacity 0.6s;
+  animation: hint 2.2s ease-in-out infinite;
+}
+#scroll-hint::after {
+  content: '';
+  display: block;
+  width: 1px; height: 36px;
+  background: rgba(255,255,255,0.2);
+}
+
+@keyframes hint {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50%       { transform: translateY(5px); opacity: 0.85; }
+}
+
+/* ── SECTION COUNTER ── */
+#section-num {
+  position: absolute;
+  top: 2rem; left: 2.5rem;
+  z-index: 10;
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 200;
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  color: rgba(255,255,255,0.28);
+  transition: opacity 0.4s;
+}

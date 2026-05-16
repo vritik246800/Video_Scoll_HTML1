@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arquitetura da Casa</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;1,300;1,400&family=Montserrat:wght@200;300;400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <div id="scroll-container">
+        <div id="sticky-wrap">
+
+            <video id="bg-video" src="house.mp4" muted playsinline preload="auto"></video>
+
+            <div class="vignette"></div>
+
+            <!-- SCENE 0 — Título, bottom center -->
+            <div class="scene scene-0 active" data-from="0" data-to="0.17">
+                <div class="card glass">
+                    <div class="label">Ensaio visual</div>
+                    <h1>Arquitetura<br>da Casa</h1>
+                    <div class="divider divider-center"></div>
+                    <p>A casa não é apenas um abrigo; é uma ideia pousada sobre a terra.</p>
+                </div>
+            </div>
+
+            <!-- SCENE 1 — Glass esquerda, meio -->
+            <div class="scene scene-1" data-from="0.17" data-to="0.34">
+                <div class="card glass">
+                    <div class="label">I — Presença</div>
+                    <h2>Uma linha de luz</h2>
+                    <div class="divider"></div>
+                    <p>Diante do céu calmo e da natureza silenciosa, ela aparece simples, leve, quase suspensa. A sua
+                        arquitetura não grita, não tenta vencer a paisagem. Parece pedir licença ao vento, às árvores e
+                        às pedras para existir ali.</p>
+                </div>
+            </div>
+
+            <!-- SCENE 2 — Glass direita, topo -->
+            <div class="scene scene-2" data-from="0.34" data-to="0.5">
+                <div class="card glass">
+                    <div class="label">II — Mistério</div>
+                    <h2>Paredes translúcidas</h2>
+                    <div class="divider"></div>
+                    <p>Não mostram tudo, mas também não escondem completamente. Assim como a vida humana, a casa revela
+                        apenas o suficiente: sombras, movimentos, memórias, presenças.</p>
+                    <p class="quote">Habitar não é possuir um espaço,<br>mas dialogar com ele.</p>
+                </div>
+            </div>
+
+            <!-- SCENE 3 — Dois blocos, bottom, space-between -->
+            <div class="scene scene-3" data-from="0.5" data-to="0.67">
+                <div class="card glass">
+                    <div class="label">III — Luz</div>
+                    <h2>Um pensamento aceso</h2>
+                    <div class="divider"></div>
+                    <p>A luz que vem de dentro transforma a construção. Enquanto o mundo lá fora escurece, a casa
+                        permanece como uma pequena promessa de paz, como se dissesse que ainda podemos construir lugares
+                        onde a alma repousa.</p>
+                </div>
+                <div class="card glass">
+                    <div class="label">IV — Filosofia</div>
+                    <h2>Vidro, linhas, vazio</h2>
+                    <div class="divider"></div>
+                    <p>Esta arquitetura é filosofia em forma de matéria. Cada elemento parece escolhido para lembrar que
+                        a beleza não está no excesso, mas na harmonia. A casa não ocupa a paisagem; ela respira com ela.
+                    </p>
+                </div>
+            </div>
+
+            <!-- SCENE 4 — Linha horizontal + card centrado -->
+            <div class="scene scene-4" data-from="0.67" data-to="0.84">
+                <div class="card-line">
+                    <div class="label" style="margin-bottom: 0.5rem;">V — Contemplação</div>
+                    <h2
+                        style="font-style: italic; font-size: clamp(1.3rem, 2.5vw, 2rem); color: rgba(255,255,255,0.9);">
+                        Construir sem destruir.<br>Iluminar sem ferir.</h2>
+                </div>
+                <div class="card glass">
+                    <p>Esta casa não serve apenas para morar. Serve para contemplar, para desacelerar, para sentir que o
+                        ser humano também pode existir sem dominar. Pode construir sem destruir, iluminar sem ferir,
+                        existir sem dominar.</p>
+                </div>
+            </div>
+
+            <!-- SCENE 5 — Conclusão, topo centrado -->
+            <div class="scene scene-5" data-from="0.84" data-to="1">
+                <div class="card glass">
+                    <div class="label">Fim — Poesia</div>
+                    <h1 style="font-style: italic; font-size: clamp(1.8rem, 3.5vw, 3rem);">Uma casa feita
+                        de<br>silêncio, luz e equilíbrio.</h1>
+                    <div class="divider divider-center"></div>
+                    <p style="max-width: 560px; margin: 0 auto;">Uma casa onde a arquitetura deixa de ser parede e se
+                        torna poesia.</p>
+                </div>
+            </div>
+
+            <div id="progress-bar"></div>
+            <div id="scroll-hint">scroll</div>
+            <div id="section-num">01 / 06</div>
+
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+
+</body>
+
+</html>
