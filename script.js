@@ -11,11 +11,12 @@ const container   = document.getElementById('scroll-container');
 const TOTAL = houseScenes.length + vibeScenes.length;
 
 /* ── CONFIG ── */
-const FPS       = 30;
-const FRAME_DUR = 1 / FPS;
-const SMOOTHING = 0.12;
-const SPLIT     = 0.5;    // overall progress onde house termina e vibe começa
-const FADE_BAND = 0.025;  // meia-largura da zona de crossfade
+const FPS        = 30;
+const FRAME_DUR  = 1 / FPS;
+const SMOOTHING  = 0.18;   // mais alto = resposta mais rápida ao scroll
+const SPLIT      = 0.5;    // overall progress onde house termina e vibe começa
+const FADE_BAND  = 0.025;  // meia-largura da zona de crossfade
+const PRELOAD_AT = SPLIT - 0.08; // começa a carregar video2 um pouco antes do crossfade
 
 /* ── ESTADO VÍDEO 1 ── */
 let targetTime  = 0;
@@ -23,9 +24,14 @@ let currentTime = 0;
 let isSeeking   = false;
 
 /* ── ESTADO VÍDEO 2 ── */
-let targetTime2  = 0;
-let currentTime2 = 0;
-let isSeeking2   = false;
+let targetTime2   = 0;
+let currentTime2  = 0;
+let isSeeking2    = false;
+let video2Loaded  = false; // lazy-load: só carrega quando se aproxima do SPLIT
+
+/* ── RAF idle: para o loop quando ambos os vídeos convergiram ── */
+let rafId        = null;
+let rafActive    = false;
 
 /* ── PROGRESSO GLOBAL ── */
 function getScrollProgress() {
@@ -98,6 +104,13 @@ function updateCrossfade(overall) {
 function updateFromScroll() {
   const overall = getScrollProgress();
 
+  /* Lazy-load video2 quando o utilizador se aproxima do crossfade */
+  if (!video2Loaded && overall >= PRELOAD_AT) {
+    video2Loaded = true;
+    video2.preload = 'auto';
+    video2.load();
+  }
+
   const houseProgress = Math.min(Math.max(overall / SPLIT, 0), 1);
   const vibeProgress  = Math.min(Math.max((overall - SPLIT) / (1 - SPLIT), 0), 1);
 
@@ -137,32 +150,57 @@ video2.addEventListener('seeked', () => { isSeeking2 = false; });
 
 /* ── RAF LOOP — scrub suave dos dois vídeos ── */
 function videoLoop() {
+  let busy = false;
+
   if (video.duration) {
-    const diff    = targetTime - currentTime;
-    currentTime  += diff * SMOOTHING;
+    const diff   = targetTime - currentTime;
+    currentTime += diff * SMOOTHING;
     const snapped = Math.round(currentTime / FRAME_DUR) * FRAME_DUR;
     const delta   = Math.abs(snapped - video.currentTime);
     if (!isSeeking && delta >= FRAME_DUR) {
       isSeeking = true;
       video.currentTime = snapped;
+      busy = true;
+    } else if (Math.abs(diff) > 0.001) {
+      busy = true; // ainda a convergir
     }
   }
 
-  if (video2.duration) {
-    const diff2    = targetTime2 - currentTime2;
-    currentTime2  += diff2 * SMOOTHING;
+  /* Só faz seek ao video2 quando está visível (próximo ou após o crossfade) */
+  if (video2Loaded && video2.duration) {
+    const diff2   = targetTime2 - currentTime2;
+    currentTime2 += diff2 * SMOOTHING;
     const snapped2 = Math.round(currentTime2 / FRAME_DUR) * FRAME_DUR;
     const delta2   = Math.abs(snapped2 - video2.currentTime);
     if (!isSeeking2 && delta2 >= FRAME_DUR) {
       isSeeking2 = true;
       video2.currentTime = snapped2;
+      busy = true;
+    } else if (Math.abs(diff2) > 0.001) {
+      busy = true;
     }
   }
 
-  requestAnimationFrame(videoLoop);
+  /* Continua o loop enquanto houver seeks pendentes; suspende quando converge */
+  if (busy) {
+    rafId = requestAnimationFrame(videoLoop);
+  } else {
+    rafActive = false;
+    rafId = null;
+  }
 }
 
-window.addEventListener('scroll', updateFromScroll, { passive: true });
+function startRaf() {
+  if (!rafActive) {
+    rafActive = true;
+    rafId = requestAnimationFrame(videoLoop);
+  }
+}
 
-videoLoop();
+window.addEventListener('scroll', () => {
+  updateFromScroll();
+  startRaf();
+}, { passive: true });
+
+startRaf();
 updateFromScroll();
